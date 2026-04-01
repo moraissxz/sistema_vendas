@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load loja_tags %}
+
+{% block conteudo %}
+<!-- HERO -->
+<section class="hero-section">
+    <div class="hero-overlay"></div>
+    <img src="{% static 'img/hero-bg.jpg' %}"
+         alt="Sorveteria"
+         class="hero-imagem-fundo">
+    <div class="container hero-conteudo">
+        <div class="row align-items-center" style="min-height: 88vh;">
+            <div class="col-lg-6">
+                <h1 class="hero-titulo">
+                    Sabores que<br>
+                    <span class="texto-destaque">encantam</span><br>
+                    a cada colher
+                </h1>
+                <p class="hero-subtitulo">
+                    Sorvetes feitos com ingredientes
+                    frescos e selecionados. Experiencia unica em cada sabor.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{% url 'lista_produtos' %}" class="btn btn-hero-principal">
+                        Ver Cardapio
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </a>
+                    <a href="{% url 'ver_carrinho' %}" class="btn btn-hero-secundario">
+                        <i class="bi bi-bag me-2"></i>
+                        Meu Carrinho
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- NÚMEROS -->
+<section class="secao-numeros">
+    <div class="container">
+        <div class="row g-0 justify-content-center"> <!-- ✅ adicionado -->
+            <div class="col-6 col-md-3">
+                <div class="numero-card">
+                    <span class="numero-valor">+30</span>
+                    <span class="numero-label">Sabores</span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="numero-card">
+                    <span class="numero-valor">2</span>
+                    <span class="numero-label">Anos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CATEGORIAS -->
+{% if categorias %}
+<section class="py-5">
+    <div class="container">
+        <div class="secao-cabecalho text-center mb-5">
+            <span class="secao-tag">Nosso Menu</span>
+            <h2 class="secao-titulo">Explore nossas categorias</h2>
+            <p class="secao-subtitulo">
+                Do classico ao especial, temos o sabor perfeito para voce
+            </p>
+        </div>
+
+        {% static 'img/categoria-padrao.jpg' as img_padrao %} <!-- ✅ declare aqui, fora do loop -->
+
+        <div class="row g-3 justify-content-center">
+            {% for categoria in categorias %}
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{% url 'lista_produtos' %}?categoria={{ categoria.id }}"
+                   class="card-categoria-pro text-decoration-none d-block">
+                    <div class="categoria-imagem-wrap">
+                        <img src="{% static 'img/categorias/' %}{{ categoria.id }}.jpg"
+                             alt="{{ categoria.nome }}"
+                             onerror="this.src='{{ img_padrao }}'"> <!-- ✅ usa a variável -->
+                    </div>
+                    <div class="categoria-nome-pro">{{ categoria.nome }}</div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- DESTAQUES -->
+{% if produtos_destaque %}
+<section class="py-5" style="background:#FAFAFA;">
+    <div class="container">
+        <div class="secao-cabecalho text-center mb-5">
+            <span class="secao-tag">Mais Pedidos</span>
+            <h2 class="secao-titulo">Destaques do dia</h2>
+            <p class="secao-subtitulo">
+                Os sabores favoritos dos nossos clientes
+            </p>
+        </div>
+        <div class="row g-4">
+            {% for produto in produtos_destaque %}
+            <div class="col-sm-6 col-lg-4">
+                <div class="card-produto-pro h-100">
+                    <div class="card-produto-imagem-pro">
+                        {% if produto.imagem %}
+                            <img src="{{ produto.imagem.url }}"
+                                 alt="{{ produto.nome }}"
+                                 class="produto-foto">
+                        {% else %}
+                            <img src="{% static 'img/produto-padrao.jpg' %}"
+                                 alt="{{ produto.nome }}"
+                                 class="produto-foto">
+                        {% endif %}
+                        {% if produto.destaque %}
+                        <span class="produto-tag-destaque">Destaque</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-produto-body-pro">
+                        {% if produto.categoria %}
+                        <span class="produto-categoria-label">
+                            {{ produto.categoria.nome }}
+                        </span>
+                        {% endif %}
+                        <h5 class="produto-nome-pro">{{ produto.nome }}</h5>
+                        <p class="produto-desc-pro">
+                            {{ produto.descricao|truncatechars:75 }}
+                        </p>
+                        <div class="produto-rodape">
+                            <span class="produto-preco-pro">
+                                {{ produto.preco|moeda_br }}
+                            </span>
+                            <form action="{% url 'adicionar_ao_carrinho' produto.id %}"
+                                  method="post"
+                                  class="form-adicionar">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantidade" value="1">
+                                <button type="submit" class="btn-add-pro">
+                                    <i class="bi bi-bag-plus me-1"></i>
+                                    Adicionar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-5">
+            <a href="{% url 'lista_produtos' %}" class="btn btn-primario px-5">
+                Ver cardapio completo
+                <i class="bi bi-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- BANNER INTERMEDIÁRIO -->
+<section class="banner-meio">
+    <div class="banner-overlay"></div>
+    <img src="{% static 'img/banner-meio.jpg' %}"
+         alt="Nossa sorveteria"
+         class="banner-imagem">
+    <div class="container banner-conteudo">
+        <div class="row justify-content-end">
+            <div class="col-lg-5">
+                <h2 class="banner-titulo">
+                    Feito com carinho, servido com amor
+                </h2>
+                <p class="banner-texto">
+                    Cada sabor e cuidadosamente desenvolvido
+                    para trazer uma experiencia unica e inesquecivel.
+                </p>
+                <a href="{% url 'lista_produtos' %}" class="btn btn-branco">
+                    Conhecer sabores
+                    <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- DIFERENCIAIS -->
+<section class="py-5">
+    <div class="container">
+        <div class="secao-cabecalho text-center mb-5">
+            <span class="secao-tag">Por que nos escolher</span>
+            <h2 class="secao-titulo">Qualidade em cada detalhe</h2>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-3 col-6">
+                <div class="diferencial-pro text-center">
+                    <div class="diferencial-icone-pro">
+                        <i class="bi bi-award"></i>
+                    </div>
+                    <h6>Qualidade Premium</h6>
+                    <p>Ingredientes selecionados e importados</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="diferencial-pro text-center">
+                    <div class="diferencial-icone-pro">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <h6>Entrega Rapida</h6>
+                    <p>Delivery em ate 45 minutos</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="diferencial-pro text-center">
+                    <div class="diferencial-icone-pro">
+                        <i class="bi bi-whatsapp"></i>
+                    </div>
+                    <h6>Pedido Facil</h6>
+                    <p>Peca direto pelo WhatsApp</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

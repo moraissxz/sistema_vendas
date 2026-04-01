@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load loja_tags %}
+
+{% block meta_description %}Cardápio completo da {{ nome_sorveteria }}. Sorvetes, açaís e muito mais. Escolha e peça pelo WhatsApp!{% endblock %}
+{% block meta_robots %}index, follow{% endblock %}
+
+{% block conteudo %}
+
+<!-- HEADER DA PÁGINA -->
+<div class="page-header">
+    <div class="page-header-overlay"></div>
+    <img src="{% static 'img/header-cardapio.jpg' %}"
+         alt="Cardapio"
+         class="page-header-img">
+    <div class="container page-header-content">
+        <h1 class="page-header-titulo">Nosso Cardápio</h1>
+        <p class="page-header-sub">
+            Escolha seus sabores favoritos e monte seu pedido
+        </p>
+    </div>
+</div>
+
+<div class="container py-5">
+
+    <!-- FILTROS -->
+    <div class="filtros-wrapper mb-5">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <form method="get" class="busca-form">
+                    {% if categoria_selecionada %}
+                    <input type="hidden" name="categoria" value="{{ categoria_selecionada.id }}">
+                    {% endif %}
+                    <div class="input-busca">
+                        <i class="bi bi-search"></i>
+                        <input type="text"
+                               name="busca"
+                               placeholder="Buscar por nome ou descrição..."
+                               value="{{ busca }}"
+                               class="campo-busca">
+                        <button type="submit" class="btn-buscar">Buscar</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2 flex-wrap justify-content-md-end">
+                    <a href="{% url 'lista_produtos' %}"
+                       class="filtro-btn {% if not categoria_selecionada %}ativo{% endif %}">
+                        Todos
+                    </a>
+                    {% for categoria in categorias %}
+                    <a href="{% url 'lista_produtos' %}?categoria={{ categoria.id }}"
+                       class="filtro-btn {% if categoria_selecionada.id == categoria.id %}ativo{% endif %}">
+                        {{ categoria.nome }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if busca %}
+    <p class="text-muted mb-4">
+        <strong>{{ total_produtos }}</strong> resultado(s) para
+        "<strong>{{ busca }}</strong>"
+        <a href="{% url 'lista_produtos' %}{% if categoria_selecionada %}?categoria={{ categoria_selecionada.id }}{% endif %}" class="ms-2 text-danger">
+            <i class="bi bi-x-circle me-1"></i>Limpar busca
+        </a>
+    </p>
+    {% endif %}
+
+    {% if produtos %}
+    <div class="row g-4">
+        {% for produto in produtos %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card-produto-pro h-100">
+                <div class="card-produto-imagem-pro">
+                    {% if produto.imagem %}
+                        <img src="{{ produto.imagem.url }}"
+                             alt="{{ produto.nome }}"
+                             class="produto-foto">
+                    {% else %}
+                        <img src="{% static 'img/produto-padrao.jpg' %}"
+                             alt="{{ produto.nome }}"
+                             class="produto-foto">
+                    {% endif %}
+                    {% if produto.destaque %}
+                    <span class="produto-tag-destaque">Destaque</span>
+                    {% endif %}
+                </div>
+                <div class="card-produto-body-pro">
+                    {% if produto.categoria %}
+                    <span class="produto-categoria-label">
+                        {{ produto.categoria.nome }}
+                    </span>
+                    {% endif %}
+                    <h5 class="produto-nome-pro">{{ produto.nome }}</h5>
+                    <p class="produto-desc-pro">
+                        {{ produto.descricao|truncatechars:80 }}
+                    </p>
+                    <div class="produto-rodape">
+                        <span class="produto-preco-pro">
+                            {{ produto.preco|moeda_br }}
+                        </span>
+                        <form action="{% url 'adicionar_ao_carrinho' produto.id %}"
+                              method="post"
+                              class="form-adicionar">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantidade" value="1">
+                            <button type="submit" class="btn-add-pro">
+                                <i class="bi bi-bag-plus me-1"></i>
+                                Adicionar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# ── PAGINAÇÃO ── #}
+    {% if pagina_obj.has_other_pages %}
+    <nav class="mt-5 d-flex justify-content-center" aria-label="Paginação">
+        <ul class="pagination gap-1">
+            {% if pagina_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link rounded"
+                   href="?{% if busca %}busca={{ busca }}&{% endif %}{% if categoria_selecionada %}categoria={{ categoria_selecionada.id }}&{% endif %}pagina={{ pagina_obj.previous_page_number }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in pagina_obj.paginator.page_range %}
+                {% if pagina_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link rounded" style="background:var(--primaria); border-color:var(--primaria);">{{ num }}</span>
+                </li>
+                {% elif num > pagina_obj.number|add:'-3' and num < pagina_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link rounded"
+                       href="?{% if busca %}busca={{ busca }}&{% endif %}{% if categoria_selecionada %}categoria={{ categoria_selecionada.id }}&{% endif %}pagina={{ num }}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagina_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link rounded"
+                   href="?{% if busca %}busca={{ busca }}&{% endif %}{% if categoria_selecionada %}categoria={{ categoria_selecionada.id }}&{% endif %}pagina={{ pagina_obj.next_page_number }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <p class="text-center text-muted small mt-2">
+        Página {{ pagina_obj.number }} de {{ pagina_obj.paginator.num_pages }}
+        &nbsp;·&nbsp; {{ total_produtos }} produto(s) no total
+    </p>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-search empty-icone-pro"></i>
+        <h4>Nenhum produto encontrado</h4>
+        <p class="text-muted">Tente buscar por outro termo ou categoria</p>
+        <a href="{% url 'lista_produtos' %}" class="btn btn-primario mt-3">
+            Ver todos os produtos
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

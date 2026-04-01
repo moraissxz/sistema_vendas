@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load loja_tags %}
+
+{% block conteudo %}
+<div class="container py-5">
+    <h1 class="pagina-titulo">Meu Carrinho</h1>
+
+    {% if not carrinho.esta_vazio %}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bag me-2"></i>
+                        Itens ({{ carrinho_total_itens }})
+                    </h5>
+                </div>
+                <div class="card-custom-body p-0">
+                    {% for item in carrinho %}
+                    <div class="item-carrinho" id="item-{{ item.produto.id }}">
+                        <div class="item-imagem">
+                            {% if item.produto.imagem %}
+                                <img src="{{ item.produto.imagem.url }}" alt="{{ item.produto.nome }}">
+                            {% else %}
+                                <div class="img-placeholder-sm">
+                                    {{ item.produto.categoria.icone|default:"🍦" }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="item-info flex-grow-1">
+                            <h6 class="item-nome">{{ item.produto.nome }}</h6>
+                            <span class="item-preco-unit">{{ item.preco|moeda_br }} cada</span>
+                        </div>
+                        <div class="item-quantidade">
+                            <button class="btn-qtd" onclick="alterarQuantidade({{ item.produto.id }}, -1)">
+                                <i class="bi bi-dash"></i>
+                            </button>
+                            <input type="number" class="input-qtd"
+                                   value="{{ item.quantidade }}" min="1" max="99"
+                                   id="qtd-{{ item.produto.id }}"
+                                   onchange="atualizarQuantidadeInput({{ item.produto.id }}, this.value)">
+                            <button class="btn-qtd" onclick="alterarQuantidade({{ item.produto.id }}, 1)">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                        <div class="item-subtotal text-end">
+                            <strong id="subtotal-{{ item.produto.id }}">{{ item.subtotal|moeda_br }}</strong>
+                        </div>
+                        <form action="{% url 'remover_do_carrinho' item.produto.id %}" method="post" class="ms-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-remover" title="Remover">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="card-custom-footer d-flex justify-content-between">
+                    <a href="{% url 'lista_produtos' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>Continuar comprando
+                    </a>
+                    <form action="{% url 'limpar_carrinho' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Limpar todo o carrinho?')">
+                            <i class="bi bi-trash3 me-1"></i>Limpar carrinho
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-custom sticky-top" style="top:100px;">
+                <div class="card-custom-header">
+                    <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Resumo</h5>
+                </div>
+                <div class="card-custom-body">
+                    <div class="resumo-linha">
+                        <span>Itens</span>
+                        <span id="resumo-itens">{{ carrinho_total_itens }}</span>
+                    </div>
+                    <hr>
+                    <div class="resumo-total">
+                        <strong>Total</strong>
+                        <strong class="texto-destaque" id="resumo-total">
+                            {{ carrinho.get_total|moeda_br }}
+                        </strong>
+                    </div>
+                    <a href="{% url 'checkout' %}" class="btn btn-whatsapp w-100 mt-3">
+                        <i class="bi bi-whatsapp me-2"></i>Finalizar Pedido
+                    </a>
+                    <p class="text-center text-muted small mt-2">
+                        Você será redirecionado para o WhatsApp
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <span style="font-size:5rem;">🛒</span>
+        <h4 class="mt-3">Seu carrinho está vazio</h4>
+        <p class="text-muted">Adicione produtos do nosso cardápio</p>
+        <a href="{% url 'lista_produtos' %}" class="btn btn-primary mt-2">
+            <i class="bi bi-grid me-2"></i>Ver Cardápio
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// getCookie já está definido em carrinho.js — não repetir aqui.
+
+function alterarQuantidade(produtoId, delta) {
+    const input = document.getElementById('qtd-' + produtoId);
+    const novaQtd = parseInt(input.value) + delta;
+    if (novaQtd >= 1 && novaQtd <= 99) {
+        input.value = novaQtd;
+        atualizarQuantidadeInput(produtoId, novaQtd);
+    }
+}
+
+function atualizarQuantidadeInput(produtoId, quantidade) {
+    const dados = {};
+    dados[produtoId] = quantidade;
+    fetch("{% url 'atualizar_carrinho' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(dados)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.sucesso) {
+            const total = parseFloat(data.total_valor).toFixed(2).replace('.', ',');
+            document.getElementById('resumo-total').textContent = 'R$ ' + total;
+            document.getElementById('resumo-itens').textContent = data.total_itens;
+            document.getElementById('badge-carrinho').textContent = data.total_itens;
+            atualizarBadge(data.total_itens);
+        }
+    });
+}
+</script>
+{% endblock %}
