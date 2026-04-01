@@ -16,5 +16,5 @@ Este projeto foi desenvolvido com o objetivo de aplicar conceitos de engenharia 
 
 ## 👨‍💻 Autor
 
-Vinicius Franco  
+Vinicius Morais Franco  
 Estudante de Engenharia de Computação - IFMS
